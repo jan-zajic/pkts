@@ -164,12 +164,11 @@ public final class IPv6PacketImpl extends AbstractPacket implements IPv6Packet {
             case TCP:
                 return tcpFramer.frame(this, payload);
             default:
-                throw new PacketParseException(0, "Unsupported inner protocol for IPv6");
+            		return new UnknownTransportPacketImpl(this, protocol, payload);
             }
         } else {
-            throw new PacketParseException(0, String.format("Unknown protocol %d inside IPv6 packet", nextProtocol));
+        	return new UnknownTransportPacketImpl(this, Protocol.UNKNOWN, payload);
         }
-
     }
 
     @Override

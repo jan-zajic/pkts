@@ -265,10 +265,10 @@ public final class IPv4PacketImpl extends AbstractPacket implements IPv4Packet {
             case TCP:
                 return tcpFramer.frame(this, payload);
             default:
-                throw new PacketParseException(9, String.format("Unsupported inner protocol %s for IPv4", protocol.getName()));
+            	return new UnknownTransportPacketImpl(this, protocol, payload);
             }
         } else {
-            throw new PacketParseException(9, String.format("Unknown protocol %d inside IPv4 packet", code));
+        	return new UnknownTransportPacketImpl(this, Protocol.UNKNOWN, payload);
         }
     }
 

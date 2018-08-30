@@ -93,7 +93,7 @@ public final class TransportPacketFactoryImpl implements TransportPacketFactory 
         pcapRecordHeader.setTotalLength(this.udpLength + payloadSize);
 
         final PCapPacket pkt = new PCapPacketImpl(pcapRecordHeader, null);
-        final MACPacket mac = MACPacketImpl.create(pkt, ethernet);
+        final MACPacket mac = EthernetPacketImpl.create(pkt, ethernet);
 
         final IPv4PacketImpl ipPacket = new IPv4PacketImpl(mac, ipv4, 0, null);
         ipPacket.setTotalLength(this.ipv4.length + this.udp.length + payloadSize);

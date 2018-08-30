@@ -8,8 +8,10 @@ import java.io.OutputStream;
 
 import io.pkts.buffer.Buffer;
 import io.pkts.frame.UnknownEtherType;
+import io.pkts.packet.EthernetPacket;
 import io.pkts.packet.MACPacket;
 import io.pkts.packet.PCapPacket;
+import io.pkts.packet.impl.EthernetPacketImpl;
 import io.pkts.packet.impl.MACPacketImpl;
 import io.pkts.protocol.Protocol;
 
@@ -18,7 +20,7 @@ import io.pkts.protocol.Protocol;
  * 
  * @author jonas@jonasborjesson.com
  */
-public class EthernetFramer implements Framer<PCapPacket, MACPacket> {
+public class EthernetFramer implements Framer<PCapPacket, EthernetPacket> {
 
     public EthernetFramer() {
     }
@@ -35,7 +37,7 @@ public class EthernetFramer implements Framer<PCapPacket, MACPacket> {
      * {@inheritDoc}
      */
     @Override
-    public MACPacket frame(final PCapPacket parent, final Buffer buffer) throws IOException, FramingException {
+    public EthernetPacket frame(final PCapPacket parent, final Buffer buffer) throws IOException, FramingException {
         if (parent == null) {
             throw new IllegalArgumentException("The parent frame cannot be null");
         }
@@ -59,7 +61,7 @@ public class EthernetFramer implements Framer<PCapPacket, MACPacket> {
         }
 
         final Buffer payload = buffer.slice(buffer.capacity());
-        return new MACPacketImpl(Protocol.ETHERNET_II, parent, headers, payload);
+        return new EthernetPacketImpl(Protocol.ETHERNET_II, parent, headers, payload);
     }
 
     public static EtherType getEtherType(final byte b1, final byte b2) throws UnknownEtherType {
@@ -122,6 +124,11 @@ public class EthernetFramer implements Framer<PCapPacket, MACPacket> {
             out.write(this.b1);
             out.write(this.b2);
         }
+        
+        public int intValue() {
+        	return ((b1 & 0xff) << 8) | (b2 & 0xff);
+        }
+        
     }
 
 }

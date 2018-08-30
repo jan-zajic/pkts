@@ -16,6 +16,7 @@ public enum Protocol {
     SCTP("sctp", Layer.LAYER_4),
     SIP("sip", Layer.LAYER_7),
     SDP("sdp", Layer.LAYER_7),
+    DOT1Q("vlan", Layer.LAYER_2, 1L),
     ETHERNET_II("eth", Layer.LAYER_2, 1L),
     SLL("sll", Layer.LAYER_2, 113L),
     IPv4("ip", Layer.LAYER_3, 101L),

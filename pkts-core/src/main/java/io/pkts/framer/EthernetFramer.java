@@ -9,10 +9,8 @@ import java.io.OutputStream;
 import io.pkts.buffer.Buffer;
 import io.pkts.frame.UnknownEtherType;
 import io.pkts.packet.EthernetPacket;
-import io.pkts.packet.MACPacket;
 import io.pkts.packet.PCapPacket;
 import io.pkts.packet.impl.EthernetPacketImpl;
-import io.pkts.packet.impl.MACPacketImpl;
 import io.pkts.protocol.Protocol;
 
 /**
@@ -61,7 +59,7 @@ public class EthernetFramer implements Framer<PCapPacket, EthernetPacket> {
         }
 
         final Buffer payload = buffer.slice(buffer.capacity());
-        return new EthernetPacketImpl(Protocol.ETHERNET_II, parent, headers, payload);
+        return new EthernetPacketImpl(parent, headers, payload);
     }
 
     public static EtherType getEtherType(final byte b1, final byte b2) throws UnknownEtherType {
@@ -99,6 +97,7 @@ public class EthernetFramer implements Framer<PCapPacket, EthernetPacket> {
         IPv6((byte) 0x86, (byte) 0xdd),
         LLDP((byte) 0x88, (byte) 0xcc),
         EAPOL((byte) 0x88, (byte) 0x8e),
+        DOT1Q((byte) 0x81, (byte) 0x00),
         // Representing EtherType < 1536, which is actually a length of the frame and not a meaningful type
         None((byte) 0x00, (byte) 0x00),
 

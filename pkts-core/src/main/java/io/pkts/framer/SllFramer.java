@@ -3,13 +3,13 @@
  */
 package io.pkts.framer;
 
+import java.io.IOException;
+
 import io.pkts.buffer.Buffer;
 import io.pkts.packet.MACPacket;
 import io.pkts.packet.PCapPacket;
-import io.pkts.packet.impl.MACPacketImpl;
+import io.pkts.packet.impl.SllPacketImpl;
 import io.pkts.protocol.Protocol;
-
-import java.io.IOException;
 
 /**
  * SLL is the linux cooked-mode capture.
@@ -72,7 +72,7 @@ public class SllFramer implements Framer<PCapPacket, MACPacket> {
 
         final Buffer headers = buffer.readBytes(16);
         final Buffer payload = buffer.slice(buffer.capacity());
-        return new MACPacketImpl(Protocol.SLL, parent, headers, payload);
+        return new SllPacketImpl(parent, headers, payload);
     }
 
     /**

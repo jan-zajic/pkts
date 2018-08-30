@@ -27,12 +27,12 @@ import io.pkts.packet.sip.SipPacket;
 import io.pkts.protocol.Protocol;
 
 /**
- * Test base for all tests regarding framing and parsing
+ * Test base for all tests regarding vlan framing and parsing
  * 
- * @author jonas@jonasborjesson.com
+ * @author jan-zajic@github.com
  * 
  */
-public class PktsTestBase {
+public class VlanTestBase {
 	
     protected FramerManager framerManager;
 
@@ -67,34 +67,14 @@ public class PktsTestBase {
     protected Buffer ethernetFrameBuffer;
 
     /**
-     * A raw ipv4 frame buffer containing a UDP packet
+     * A raw vlan frame buffer containing a 802.1Q packet
      */
-    protected Buffer ipv4FrameBuffer;
-
+    protected Buffer vlanFrameBuffer;
+    
     /**
-     * A raw ipv4 frame containing a TCP packet
+     * A raw ipv4 frame buffer
      */
-    protected Buffer ipv4TCPFrameBuffer;
-
-    /**
-     * A raw udp frame buffer.
-     */
-    protected Buffer udpFrameBuffer;
-
-    /**
-     * A raw tcp frame buffer.
-     */
-    protected Buffer tcpFrameBuffer;
-
-    /**
-     * A raw sip frame buffer.
-     */
-    protected Buffer sipFrameBuffer;
-
-    /**
-     * A raw sip frame buffer containing a 180 response
-     */
-    protected Buffer sipFrameBuffer180Response;
+    protected Buffer ipFrameBuffer;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -103,7 +83,7 @@ public class PktsTestBase {
     @Before
     public void setUp() throws Exception {
         this.framerManager = FramerManager.getInstance();
-        final InputStream stream = PktsTestBase.class.getResourceAsStream("sipp.pcap");
+        final InputStream stream = PktsTestBase.class.getResourceAsStream("dot1q.cap");
 
         this.pcapStream = Buffers.wrap(stream);
 
@@ -115,22 +95,14 @@ public class PktsTestBase {
         final PcapFramer framer = new PcapFramer(this.defaultPcapHeader, this.framerManager);
         this.defaultPcapPacket = framer.frame(null, this.pcapStream);
         this.defaultFrame = this.defaultPcapPacket.getPayload();
-        assertThat(547, is(this.defaultFrame.capacity()));
+        assertThat(this.defaultFrame.capacity(), is(68));
 
-        this.ethernetFrameBuffer = Buffers.wrap(RawData.rawEthernetFrame);
+        this.ethernetFrameBuffer = this.defaultFrame;
+        this.vlanFrameBuffer = this.ethernetFrameBuffer.slice(14, this.ethernetFrameBuffer.capacity());
 
         // slice out the individual payloads so that our tests can work
         // directly on this raw data.
-        this.ipv4FrameBuffer = this.ethernetFrameBuffer.slice(14, this.ethernetFrameBuffer.capacity());
-        this.udpFrameBuffer = this.ethernetFrameBuffer.slice(34, this.ethernetFrameBuffer.capacity());
-        this.sipFrameBuffer = this.ethernetFrameBuffer.slice(42, this.ethernetFrameBuffer.capacity());
-
-        final Buffer buf = Buffers.wrap(RawData.tcpFrame);
-        this.ipv4TCPFrameBuffer = buf.slice(14, buf.capacity());
-        this.tcpFrameBuffer = buf.slice(34, buf.capacity());
-
-        final Buffer ethernetFrame = Buffers.wrap(RawData.rawEthernetFrame2);
-        this.sipFrameBuffer180Response = ethernetFrame.slice(42, ethernetFrame.capacity());
+        this.ipFrameBuffer = this.vlanFrameBuffer.slice(4, this.vlanFrameBuffer.capacity());
     }
     
     @After

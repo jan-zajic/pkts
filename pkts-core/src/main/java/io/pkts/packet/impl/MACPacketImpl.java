@@ -3,28 +3,24 @@
  */
 package io.pkts.packet.impl;
 
-import io.pkts.buffer.Buffer;
-import io.pkts.buffer.Buffers;
-import io.pkts.frame.UnknownEtherType;
-import io.pkts.framer.EthernetFramer;
-import io.pkts.framer.IPv4Framer;
-import io.pkts.framer.IPv6Framer;
-import io.pkts.packet.IPPacket;
-import io.pkts.packet.MACPacket;
-import io.pkts.packet.PCapPacket;
-import io.pkts.packet.PacketParseException;
-import io.pkts.protocol.Protocol;
-
 import java.io.IOException;
 import java.io.OutputStream;
+
+import io.pkts.buffer.Buffer;
+import io.pkts.buffer.Buffers;
+import io.pkts.framer.IPv4Framer;
+import io.pkts.framer.IPv6Framer;
+import io.pkts.packet.MACPacket;
+import io.pkts.packet.PCapPacket;
+import io.pkts.protocol.Protocol;
 
 /**
  * @author jonas@jonasborjesson.com
  */
-public class MACPacketImpl extends AbstractPacket implements MACPacket {
+public abstract class MACPacketImpl extends AbstractPacket implements MACPacket {
 
-    private static final IPv4Framer ipv4Framer = new IPv4Framer();
-    private static final IPv6Framer ipv6Framer = new IPv6Framer();
+		protected static final IPv4Framer ipv4Framer = new IPv4Framer();
+		protected static final IPv6Framer ipv6Framer = new IPv6Framer();
 
     protected final PCapPacket parent;
     private final String sourceMacAddress;
@@ -163,51 +159,4 @@ public class MACPacketImpl extends AbstractPacket implements MACPacket {
         }
     }
 
-    @Override
-    public MACPacket clone() {
-        final PCapPacket pkt = this.parent.clone();
-        return new MACPacketImpl(getProtocol(), pkt, this.headers.clone(), getPayload().clone());
-    }
-
-    public Protocol getNextProtocol() throws IOException {
-      if (getProtocol() == Protocol.ETHERNET_II) {
-          final byte b1 = headers.getByte(12);
-          final byte b2 = headers.getByte(13);
-          EthernetFramer.EtherType etherType;
-          try {
-              etherType = EthernetFramer.getEtherType(b1, b2);
-          } catch (UnknownEtherType e) {
-              throw new PacketParseException(12, String.format("Unknown Ethernet type 0x%x%x", b1, b2));
-          }
-          switch (etherType) {
-              case IPv4:
-                  return Protocol.IPv4;
-              case IPv6:
-                  return Protocol.IPv6;
-              case ARP:
-                  return Protocol.ARP;
-              default:
-                  return Protocol.UNKNOWN;
-          }
-      } else {
-          // TODO: figure out how an SLL packet indicates IPv4 vs IPv6
-          return Protocol.IPv4;
-      }
-    }
-
-    @Override
-    public IPPacket getNextPacket() throws IOException {
-        final Buffer payload = getPayload();
-        if (payload == null) {
-            return null;
-        }
-        switch (getNextProtocol()) {
-            case IPv4:
-                return ipv4Framer.frame(this, payload);
-            case IPv6:
-                return ipv6Framer.frame(this, payload);
-            default:
-                return null;
-        }
-    }
 }

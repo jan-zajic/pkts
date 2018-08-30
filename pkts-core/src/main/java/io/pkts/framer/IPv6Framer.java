@@ -3,21 +3,22 @@
  */
 package io.pkts.framer;
 
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import io.pkts.buffer.Buffer;
 import io.pkts.buffer.Buffers;
 import io.pkts.packet.IPv6Packet;
 import io.pkts.packet.MACPacket;
+import io.pkts.packet.Packet;
 import io.pkts.packet.impl.IPv6PacketImpl;
 import io.pkts.protocol.Protocol;
-
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author epall@google.com
  *
  */
-public class IPv6Framer implements Framer<MACPacket, IPv6Packet> {
+public class IPv6Framer implements Framer<Packet, IPv6Packet> {
 
     public IPv6Framer() {
     }
@@ -34,7 +35,7 @@ public class IPv6Framer implements Framer<MACPacket, IPv6Packet> {
      * {@inheritDoc}
      */
     @Override
-    public IPv6Packet frame(final MACPacket parent, final Buffer payload) throws IOException {
+    public IPv6Packet frame(final Packet parent, final Buffer payload) throws IOException {
         if (parent == null) {
             throw new IllegalArgumentException("The parent frame cannot be null");
         }

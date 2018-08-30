@@ -262,4 +262,14 @@ public final class IPv6PacketImpl extends AbstractPacket implements IPv6Packet {
         }
         return null;
     }
+
+    @Override
+		public Protocol getNextProtocol() {
+			return Protocol.valueOf((byte) nextProtocol);
+		}
+
+		@Override
+		public int getNextProtocolNumber() {
+			return this.nextProtocol;
+		}
 }

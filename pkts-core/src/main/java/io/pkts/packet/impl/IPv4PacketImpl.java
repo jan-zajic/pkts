@@ -375,4 +375,21 @@ public final class IPv4PacketImpl extends AbstractPacket implements IPv4Packet {
         return sb.toString();
     }
 
+		@Override
+		public Protocol getNextProtocol() {
+			int protocolNumber = getNextProtocolNumber();
+			return Protocol.valueOf((byte) protocolNumber);
+		}
+
+		@Override
+		public int getNextProtocolNumber() {
+			try {
+				// the protocol is in byte 10
+				final byte code = this.headers.getByte(9);
+				return code;
+			} catch(IOException e) {
+				throw new RuntimeException("Unable to read data from the underlying Buffer.", e);
+			}
+		}
+
 }

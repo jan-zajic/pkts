@@ -3,6 +3,8 @@
  */
 package io.pkts.packet;
 
+import io.pkts.protocol.Protocol;
+
 /**
  * Represents a packet from the Network Layer (layer 3). Actually, to be
  * completely honest, the model implemented (at least so far) is more geared
@@ -123,4 +125,9 @@ public interface IPPacket extends Packet, Cloneable {
      * @return
      */
     short getFragmentOffset();
+    
+    Protocol getNextProtocol();
+    
+    int getNextProtocolNumber();
+    
 }

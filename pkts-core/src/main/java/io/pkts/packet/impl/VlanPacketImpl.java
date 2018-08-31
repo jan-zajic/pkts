@@ -2,7 +2,6 @@ package io.pkts.packet.impl;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 
 import io.pkts.buffer.Buffer;
 import io.pkts.buffer.Buffers;
@@ -12,17 +11,18 @@ import io.pkts.framer.EthernetFramer.EtherType;
 import io.pkts.framer.IPv4Framer;
 import io.pkts.framer.IPv6Framer;
 import io.pkts.packet.IPPacket;
-import io.pkts.packet.PCapPacket;
 import io.pkts.packet.Packet;
 import io.pkts.packet.PacketParseException;
 import io.pkts.packet.VlanPacket;
+import io.pkts.packet.arp.impl.ArpFramer;
 import io.pkts.protocol.Protocol;
 
 public final class VlanPacketImpl extends AbstractPacket implements VlanPacket {
 
 	private static final IPv4Framer ipv4Framer = new IPv4Framer();
 	private static final IPv6Framer ipv6Framer = new IPv6Framer();
-
+	private static final ArpFramer arpFramer = new ArpFramer();
+	
 	/**
 	 * If the headers are set then this overrides any of the source stuff set
 	 * above.
@@ -67,7 +67,7 @@ public final class VlanPacketImpl extends AbstractPacket implements VlanPacket {
 	}
 
 	@Override
-	public IPPacket getNextPacket() throws IOException {
+	public Packet getNextPacket() throws IOException {
 		final Buffer payload = getPayload();
 		if (payload == null) {
 			return null;
@@ -77,6 +77,8 @@ public final class VlanPacketImpl extends AbstractPacket implements VlanPacket {
 			return ipv4Framer.frame(this, payload);
 		case IPv6:
 			return ipv6Framer.frame(this, payload);
+		case ARP:
+  		return arpFramer.frame(this, payload);
 		default:
 			return null;
 		}

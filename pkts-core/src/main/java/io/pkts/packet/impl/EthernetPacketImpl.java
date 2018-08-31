@@ -8,15 +8,16 @@ import io.pkts.framer.EthernetFramer;
 import io.pkts.framer.EthernetFramer.EtherType;
 import io.pkts.framer.VlanFramer;
 import io.pkts.packet.EthernetPacket;
-import io.pkts.packet.IPPacket;
 import io.pkts.packet.PCapPacket;
 import io.pkts.packet.Packet;
 import io.pkts.packet.PacketParseException;
+import io.pkts.packet.arp.impl.ArpFramer;
 import io.pkts.protocol.Protocol;
 
 public class EthernetPacketImpl extends MACPacketImpl implements EthernetPacket {
 
 	private VlanFramer vlanFramer = new VlanFramer();
+	private ArpFramer arpFramer = new ArpFramer();
 	
 	/**
 	 * Creates a new {@link EthernetPacketImpl} and it assumes ethernet II and it
@@ -110,6 +111,8 @@ public class EthernetPacketImpl extends MACPacketImpl implements EthernetPacket 
               return ipv6Framer.frame(this, payload);
           case DOT1Q:
           		return vlanFramer.frame(this, payload);
+          case ARP:
+          		return arpFramer.frame(this, payload);
           default:
               return null;
       }

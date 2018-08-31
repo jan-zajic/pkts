@@ -3,11 +3,8 @@ package io.pkts;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
@@ -15,16 +12,10 @@ import org.junit.BeforeClass;
 
 import io.pkts.buffer.Buffer;
 import io.pkts.buffer.Buffers;
-import io.pkts.frame.Frame;
 import io.pkts.frame.PcapGlobalHeader;
 import io.pkts.framer.FramerManager;
 import io.pkts.framer.PcapFramer;
-import io.pkts.packet.IPv4Packet;
 import io.pkts.packet.PCapPacket;
-import io.pkts.packet.Packet;
-import io.pkts.packet.PacketParseException;
-import io.pkts.packet.sip.SipPacket;
-import io.pkts.protocol.Protocol;
 
 /**
  * Test base for all tests regarding vlan framing and parsing
@@ -107,106 +98,6 @@ public class VlanTestBase {
     
     @After
     public void tearDown() throws Exception {
-    }
-
-    public List<Packet> loadStream(final String streamName) throws Exception {
-        final InputStream stream = PktsTestBase.class.getResourceAsStream(streamName);
-        final Pcap pcap = Pcap.openStream(stream);
-        final List<Packet> packets = new ArrayList<Packet>();
-        pcap.loop(new PacketHandler() {
-            @Override
-            public boolean nextPacket(final Packet packet) {
-                packets.add(packet);
-                return true;
-            }
-        });
-        pcap.close();
-        return packets;
-    }
-
-    public List<IPv4Packet> loadIPPackets(final String streamName) throws Exception {
-        final List<Packet> packets = loadStream(streamName);
-        final List<IPv4Packet> ipPackets = new ArrayList<>();
-        for (final Packet packet : packets) {
-            final IPv4Packet ip = (IPv4Packet) packet.getPacket(Protocol.IPv4);
-            ipPackets.add(ip);
-        }
-        return ipPackets;
-    }
-
-    /**
-     * Helper class that simply just counts the number of SIP requests.
-     * 
-     */
-    public static class MethodCalculator implements PacketHandler {
-        public int total;
-        public int invite;
-        public int bye;
-        public int ack;
-        public int cancel;
-
-        @Override
-        public boolean nextPacket(final Packet packet) {
-            try {
-                final SipPacket msg = (SipPacket) packet.getPacket(Protocol.SIP);
-                ++this.total;
-                if (msg.isRequest()) {
-                    if (msg.isInvite()) {
-                        ++this.invite;
-                    } else if (msg.isBye()) {
-                        ++this.bye;
-                    } else if (msg.isAck()) {
-                        ++this.ack;
-                    } else if (msg.isCancel()) {
-                        ++this.cancel;
-                    }
-                }
-            } catch (final IOException e) {
-                fail("Got an IOException in my test " + e.getMessage());
-            } catch (final PacketParseException e) {
-                fail("Got a PacketParseException in my test " + e.getMessage());
-            }
-            return true;
-        }
-
-    }
-
-    /**
-     * Helper class that will write either {@link Frame}s or {@link Packet} to
-     * the output stream. It will ONLY write INVITE and BYE messages.
-     */
-    public static class TestWriteStreamHandler implements PacketHandler {
-
-        private final PcapOutputStream out;
-
-        /**
-         * 
-         * @param out
-         *            the output stream to write to
-         */
-        public TestWriteStreamHandler(final PcapOutputStream out) {
-            this.out = out;
-        }
-
-        @Override
-        public boolean nextPacket(final Packet packet) {
-            try {
-                // only write out INVITE and BYE requests
-                final SipPacket msg = (SipPacket) packet.getPacket(Protocol.SIP);
-                final String method = msg.getMethod().toString();
-                final boolean isInviteOrBye = "INVITE".equals(method) || "BYE".equals(method);
-                if (msg.isRequest() && isInviteOrBye) {
-                    // final TransportPacket pkt = (TransportPacket) msg.getPacket(Protocol.UDP);
-                    this.out.write(msg);
-                }
-            } catch (final IOException e) {
-                fail("Got an IOException in my test " + e.getMessage());
-            } catch (final PacketParseException e) {
-                fail("Got a PacketParseException in my test " + e.getMessage());
-            }
-
-            return true;
-        }
     }
 
 }

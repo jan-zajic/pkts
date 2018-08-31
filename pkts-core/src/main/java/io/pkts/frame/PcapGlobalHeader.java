@@ -1,12 +1,12 @@
 package io.pkts.frame;
 
-import io.pkts.buffer.Buffer;
-import io.pkts.buffer.Buffers;
-import io.pkts.protocol.Protocol;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteOrder;
+
+import io.pkts.buffer.Buffer;
+import io.pkts.buffer.Buffers;
+import io.pkts.protocol.Protocol;
 
 /**
  * 
@@ -33,6 +33,10 @@ public final class PcapGlobalHeader {
      */
     public static final byte[] MAGIC_NGPCAP = { (byte) 0x0A, (byte) 0x0D, (byte) 0x0D, (byte) 0x0A };
 
+    public final static byte[] MAGIC_NG_BIG_ENDIAN = new byte[]{0x1A, 0x2B, 0x3C, 0x4D};
+
+    public final static byte[] MAGIC_NG_LITTLE_ENDIAN = new byte[]{0x4D, 0x3C, 0x2B, 0x1A};
+    
     /**
      * Found the following at:
      * http://anonsvn.wireshark.org/wireshark/trunk/wiretap/libpcap.h
@@ -61,6 +65,8 @@ public final class PcapGlobalHeader {
     private final ByteOrder byteOrder;
     private final byte[] body;
 
+    private final PcapngSectionHeader pcapng;
+    
     /**
      * Factory method for creating a default {@link PcapGlobalHeader}. Mainly
      * used for when writing out new pcaps to a stream.
@@ -99,14 +105,15 @@ public final class PcapGlobalHeader {
                     + "\". Not sure how to construct the global header. You probably need to add some code yourself");
         }
 
-        return new PcapGlobalHeader(ByteOrder.LITTLE_ENDIAN, body.getRawArray());
+        return new PcapGlobalHeader(ByteOrder.LITTLE_ENDIAN, body.getRawArray(), null);
     }
 
-    public PcapGlobalHeader(final ByteOrder byteOrder, final byte[] body) {
+    public PcapGlobalHeader(final ByteOrder byteOrder, final byte[] body, final PcapngSectionHeader pcapng) {
         assert byteOrder != null;
-        assert body != null && body.length == 20;
+        assert body != null;
         this.byteOrder = byteOrder;
         this.body = body;
+        this.pcapng = pcapng;
     }
 
     public ByteOrder getByteOrder() {
@@ -195,23 +202,42 @@ public final class PcapGlobalHeader {
     public static final PcapGlobalHeader parse(final Buffer in) throws IOException {
         final Buffer h = in.readBytes(4);
         final byte[] header = h.getArray();
-
+        final byte[] body;
+        
+        PcapngSectionHeader pcapng = null;
         ByteOrder byteOrder = null;
         if (header[0] == MAGIC_BIG_ENDIAN[0] && header[1] == MAGIC_BIG_ENDIAN[1]
                 && header[2] == MAGIC_BIG_ENDIAN[2] && header[3] == MAGIC_BIG_ENDIAN[3]) {
             byteOrder = ByteOrder.BIG_ENDIAN;
+            body = in.readBytes(20).getArray();
         } else if (header[0] == MAGIC_LITTLE_ENDIAN[0] && header[1] == MAGIC_LITTLE_ENDIAN[1]
                 && header[2] == MAGIC_LITTLE_ENDIAN[2] && header[3] == MAGIC_LITTLE_ENDIAN[3]) {
             byteOrder = ByteOrder.LITTLE_ENDIAN;
-        } else {
+            body = in.readBytes(20).getArray();
+        } else if(header[0] == MAGIC_NGPCAP[0] && header[1] == MAGIC_NGPCAP[1]
+            && header[2] == MAGIC_NGPCAP[2] && header[3] == MAGIC_NGPCAP[3]) {
+        		//see https://pcapng.github.io/pcapng/#section_shb
+        		final byte[] headerBlockLength = in.readBytes(4).getArray();
+        		final byte[] byteOrderMagic = in.readBytes(4).getArray();
+        		if (byteOrderMagic[0] == MAGIC_NG_BIG_ENDIAN[0] && byteOrderMagic[1] == MAGIC_NG_BIG_ENDIAN[1]
+                && byteOrderMagic[2] == MAGIC_NG_BIG_ENDIAN[2] && byteOrderMagic[3] == MAGIC_NG_BIG_ENDIAN[3]) {
+        				byteOrder = ByteOrder.BIG_ENDIAN;
+		        } else if (byteOrderMagic[0] == MAGIC_NG_LITTLE_ENDIAN[0] && byteOrderMagic[1] == MAGIC_NG_LITTLE_ENDIAN[1]
+		                && byteOrderMagic[2] == MAGIC_NG_LITTLE_ENDIAN[2] && byteOrderMagic[3] == MAGIC_NG_LITTLE_ENDIAN[3]) {
+		            byteOrder = ByteOrder.LITTLE_ENDIAN;
+		        } else {
+	            throw new IllegalArgumentException("Unknown byte order type");
+		        }
+        		int blockLength = PcapngSectionHeader.parseBlockLength(headerBlockLength, byteOrder == ByteOrder.BIG_ENDIAN);
+        		body = in.readBytes(blockLength-12).getArray();
+        		pcapng = new PcapngSectionHeader(blockLength, body);        		
+    		} else {
             throw new IllegalArgumentException("Unknown header type");
         }
 
-        final byte[] body = in.readBytes(20).getArray();
-
-        return new PcapGlobalHeader(byteOrder, body);
+        return new PcapGlobalHeader(byteOrder, body, pcapng);
     }
-
+ 
     /**
      * Will write this header to the output stream.
      * 
@@ -226,6 +252,10 @@ public final class PcapGlobalHeader {
         out.write(this.body);
     }
 
+    public PcapngSectionHeader getPcapng() {
+			return pcapng;
+		}
+    
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();

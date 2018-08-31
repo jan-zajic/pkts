@@ -158,5 +158,7 @@ public abstract class MACPacketImpl extends AbstractPacket implements MACPacket 
             this.headers.setByte(i + offset, b);
         }
     }
+    
+    public abstract MACPacket clone();
 
 }

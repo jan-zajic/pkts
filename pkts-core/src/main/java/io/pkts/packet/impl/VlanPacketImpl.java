@@ -41,28 +41,20 @@ public final class VlanPacketImpl extends AbstractPacket implements VlanPacket {
 	}
 
 	public Protocol getNextProtocol() throws IOException {
-		if (getProtocol() == Protocol.ETHERNET_II) {
-			final byte b1 = headers.getByte(12);
-			final byte b2 = headers.getByte(13);
-			EthernetFramer.EtherType etherType;
-			try {
-				etherType = EthernetFramer.getEtherType(b1, b2);
-			} catch (UnknownEtherType e) {
-				throw new PacketParseException(12, String.format("Unknown Ethernet type 0x%x%x", b1, b2));
-			}
-			switch (etherType) {
-			case IPv4:
-				return Protocol.IPv4;
-			case IPv6:
-				return Protocol.IPv6;
-			case ARP:
-				return Protocol.ARP;
-			default:
-				return Protocol.UNKNOWN;
+		EthernetFramer.EtherType etherType = getEthernetProtocol();
+			if(etherType != null) {
+				switch (etherType) {
+				case IPv4:
+					return Protocol.IPv4;
+				case IPv6:
+					return Protocol.IPv6;
+				case ARP:
+					return Protocol.ARP;
+				default:
+					return Protocol.UNKNOWN;
 			}
 		} else {
-			// TODO: figure out how an SLL packet indicates IPv4 vs IPv6
-			return Protocol.IPv4;
+			throw new PacketParseException(2, String.format("Unknown Ethernet type in vlan packet"));
 		}
 	}
 

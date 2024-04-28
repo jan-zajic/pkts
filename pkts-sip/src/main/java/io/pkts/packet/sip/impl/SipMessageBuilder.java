@@ -19,7 +19,10 @@ import io.pkts.packet.sip.header.ToHeader;
 import io.pkts.packet.sip.header.ViaHeader;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -49,7 +52,6 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
     private CSeqHeader cseq;
     private CSeqHeader.Builder cseqBuilder;
 
-    private MaxForwardsHeader maxForwards;
     private Consumer<MaxForwardsHeader.Builder> onMaxForwardsBuilder;
 
     private Consumer<AddressParametersHeader.Builder<ToHeader>> onToBuilder;
@@ -77,15 +79,15 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
      */
     private Buffer body;
 
-    private short indexOfTo = -1;
-    private short indexOfFrom = -1;
-    private short indexOfCSeq = -1;
-    private short indexOfCallId = -1;
-    private short indexOfMaxForwards = -1;
-    private short indexOfVia = -1;
-    private short indexOfRoute = -1;
-    private short indexOfRecordRoute = -1;
-    private short indexOfContact = -1;
+    private SipHeader toHeader;
+    private SipHeader fromHeader;
+    private SipHeader cSeqHeader;
+    private SipHeader callIdHeader;
+    private SipHeader maxForwardsHeader;
+    private SipHeader viaHeader;
+    private SipHeader routeHeader;
+    private SipHeader recordRouteHeader;
+    private SipHeader contactHeader;
 
     /**
      * By default, this builder will add certain headers if missing
@@ -120,56 +122,38 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
 
     private void processHeader(final SipHeader header) {
         if (header.isContactHeader()) {
-            indexOfContact = addTrackedHeader(indexOfContact, header);
+            addHeader(header);
+            contactHeader = header;
         } else if (header.isCSeqHeader()) {
-            indexOfCSeq = addTrackedHeader(indexOfCSeq, header);
+            addHeader(header);
+            cSeqHeader = header;
         } else if (header.isMaxForwardsHeader()) {
-            indexOfMaxForwards = addTrackedHeader(indexOfMaxForwards, header);
+            addHeader(header);
+            maxForwardsHeader = header;
         } else if (header.isFromHeader()) {
-            indexOfFrom = addTrackedHeader(indexOfFrom, header);
+            addHeader(header);
+            fromHeader = header;
         } else if (header.isToHeader()) {
-            indexOfTo = addTrackedHeader(indexOfTo, header);
+            addHeader(header);
+            toHeader = header;
         } else if (header.isViaHeader()) {
             viaHeaders = ensureList(viaHeaders);
             viaHeaders.add(header.ensure().toViaHeader());
-            indexOfVia = addTrackedListHeader(indexOfVia);
+            viaHeader = header;
         } else if (header.isCallIdHeader()) {
-            indexOfCallId = addTrackedHeader(indexOfCallId, header);
+            addHeader(header);
+            callIdHeader = header;
         } else if (header.isRouteHeader()) {
             routeHeaders = ensureList(routeHeaders);
             routeHeaders.add(header.ensure().toRouteHeader());
-            indexOfRoute = addTrackedListHeader(indexOfRoute);
+            routeHeader = header;
         } else if (header.isRecordRouteHeader()) {
             recordRouteHeaders = ensureList(recordRouteHeaders);
             recordRouteHeaders.add(header.ensure().toRecordRouteHeader());
-            indexOfRecordRoute = addTrackedListHeader(indexOfRecordRoute);
+            recordRouteHeader = header;
         } else {
             addHeader(header);
         }
-    }
-
-    private short addTrackedListHeader(final short index) {
-        if (index != -1) {
-            return index;
-        }
-        // probably want to wrap the list in a ListHeader or
-        // something for now null means that there is a list
-        // waiting at this index...
-        return addHeader(null);
-    }
-
-    /**
-     * There are several headers that we want to know their position
-     * and in that case we use this method to add them since we want
-     * to either add them to a particular position or we want to
-     * remember which index we added them to.
-     */
-    private short addTrackedHeader(final short index, final SipHeader header) {
-        if (index != -1) {
-            headers.set(index, header.ensure());
-            return index;
-        }
-        return addHeader(header.ensure());
     }
 
     private short addHeader(final SipHeader header) {
@@ -211,7 +195,8 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
     @Override
     public SipMessage.Builder<T> withFromHeader(final FromHeader from) {
         if (from != null) {
-            indexOfFrom = addTrackedHeader(indexOfFrom, from);
+            addHeader(from);
+            fromHeader = from;
         }
         return this;
     }
@@ -234,7 +219,8 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
     @Override
     public SipMessage.Builder<T> withToHeader(final ToHeader to) {
         if (to != null) {
-            indexOfTo = addTrackedHeader(indexOfTo, to);
+            addHeader(to);
+            toHeader = to;
         }
         return this;
     }
@@ -257,7 +243,8 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
     @Override
     public SipMessage.Builder<T> withContactHeader(final ContactHeader contact) {
         if (contact != null) {
-            indexOfContact = addTrackedHeader(indexOfContact, contact);
+            addHeader(contact);
+            contactHeader = contact;
         }
         return this;
     }
@@ -270,14 +257,17 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
     @Override
     public SipMessage.Builder<T> withCSeqHeader(final CSeqHeader cseq) {
         if (cseq != null) {
-            indexOfCSeq = addTrackedHeader(indexOfCSeq, cseq);
+            addHeader(cseq);
+            cSeqHeader = cseq;
         }
         return this;
     }
 
+    @Override
     public SipMessage.Builder<T> withCallIdHeader(final CallIdHeader callID) {
         if (callID != null) {
-            indexOfCallId = addTrackedHeader(indexOfCallId, callID);
+            addHeader(callID);
+            callIdHeader = callID;
         }
         return this;
     }
@@ -294,18 +284,19 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
 
     @Override
     public SipMessage.Builder<T> withMaxForwardsHeader(final MaxForwardsHeader maxForwards) {
-        indexOfMaxForwards = addTrackedHeader(indexOfMaxForwards, maxForwards);
+        addHeader(maxForwards);
+        maxForwardsHeader = maxForwards;
         return this;
     }
 
     @Override
-    public SipMessage.Builder<T> onTopMostViaHeader(Consumer<ViaHeader.Builder> f) {
+    public SipMessage.Builder<T> onTopMostViaHeader(final Consumer<ViaHeader.Builder> f) {
         this.onTopMostViaBuilder = chainConsumers(this.onTopMostViaBuilder, f);
         return this;
     }
 
     @Override
-    public SipMessage.Builder<T> onViaHeader(BiConsumer<Integer, ViaHeader.Builder> f) {
+    public SipMessage.Builder<T> onViaHeader(final BiConsumer<Integer, ViaHeader.Builder> f) {
         this.onViaBuilder = chainConsumers(this.onViaBuilder, f);
         return this;
     }
@@ -328,21 +319,20 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
             this.routeHeaders = ensureList(this.routeHeaders);
             this.routeHeaders.clear();
             this.routeHeaders.add(route);
-            indexOfRoute = addTrackedListHeader(indexOfRoute);
         }
+
         return this;
     }
 
     @Override
     public SipMessage.Builder<T> withRouteHeaders(final RouteHeader... routes) {
-        if (routes != null) {
+        if (routes != null && routes.length > 0) {
             this.routeHeaders = ensureList(this.routeHeaders);
             this.routeHeaders.clear();
-            for (final RouteHeader route : routes) {
-                this.routeHeaders.add(route);
-            }
-            indexOfRoute = addTrackedListHeader(indexOfRoute);
+            routeHeader = routes[0];
+            this.routeHeaders.addAll(Arrays.asList(routes));
         }
+
         return this;
     }
 
@@ -351,9 +341,10 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
         if (routes != null && !routes.isEmpty()) {
             this.routeHeaders = ensureList(this.routeHeaders);
             this.routeHeaders.clear();
-            routes.forEach(this.routeHeaders::add);
-            indexOfRoute = addTrackedListHeader(indexOfRoute);
+            routeHeader = routes.get(0);
+            this.routeHeaders.addAll(routes);
         }
+
         return this;
     }
 
@@ -362,7 +353,7 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
         if (route != null) {
             this.routeHeaders = ensureList(this.routeHeaders);
             this.routeHeaders.add(0, route);
-            indexOfRoute = addTrackedListHeader(indexOfRoute);
+            routeHeader = route;
         }
         return this;
     }
@@ -401,21 +392,20 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
             this.recordRouteHeaders = ensureList(this.recordRouteHeaders);
             this.recordRouteHeaders.clear();
             this.recordRouteHeaders.add(recordRoute);
-            indexOfRecordRoute = addTrackedListHeader(indexOfRecordRoute);
+            recordRouteHeader = recordRoute;
         }
         return this;
     }
 
     @Override
     public SipMessage.Builder<T> withRecordRouteHeaders(final RecordRouteHeader... recordRoutes) {
-        if (recordRoutes != null) {
+        if (recordRoutes != null && recordRoutes.length > 0) {
             this.recordRouteHeaders = ensureList(this.recordRouteHeaders);
             this.recordRouteHeaders.clear();
-            for (final RecordRouteHeader rr : recordRoutes) {
-                this.recordRouteHeaders.add(rr);
-            }
-            indexOfRecordRoute = addTrackedListHeader(indexOfRecordRoute);
+            recordRouteHeader = recordRoutes[0];
+            this.recordRouteHeaders.addAll(Arrays.asList(recordRoutes));
         }
+
         return this;
     }
 
@@ -424,9 +414,10 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
         if (recordRoutes != null && !recordRoutes.isEmpty()) {
             this.recordRouteHeaders = ensureList(this.recordRouteHeaders);
             this.recordRouteHeaders.clear();
-            recordRoutes.forEach(this.recordRouteHeaders::add);
-            indexOfRecordRoute = addTrackedListHeader(indexOfRecordRoute);
+            recordRouteHeader = recordRoutes.get(0);
+            this.recordRouteHeaders.addAll(recordRoutes);
         }
+
         return this;
     }
 
@@ -435,7 +426,7 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
         if (recordRoute != null) {
             this.recordRouteHeaders = ensureList(this.recordRouteHeaders);
             this.recordRouteHeaders.add(0, recordRoute);
-            indexOfRecordRoute = addTrackedListHeader(indexOfRecordRoute);
+            recordRouteHeader = recordRoute;
         }
         return this;
     }
@@ -446,31 +437,29 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
             this.viaHeaders = ensureList(this.viaHeaders);
             this.viaHeaders.clear();
             this.viaHeaders.add(via);
-            indexOfVia = addTrackedListHeader(indexOfVia);
+            viaHeader = via;
         }
         return this;
     }
 
     @Override
     public SipMessage.Builder<T> withViaHeaders(final ViaHeader... vias) {
-        if (vias != null) {
+        if (vias != null && vias.length > 0) {
             this.viaHeaders = ensureList(this.viaHeaders);
             this.viaHeaders.clear();
-            for (final ViaHeader via : vias) {
-                this.viaHeaders.add(via);
-            }
-            indexOfVia = addTrackedListHeader(indexOfVia);
+            viaHeader = vias[0];
+            this.viaHeaders.addAll(Arrays.asList(vias));
         }
         return this;
     }
 
     @Override
     public SipMessage.Builder<T> withViaHeaders(final List<ViaHeader> vias) {
-        if (vias != null) {
+        if (vias != null && !vias.isEmpty()) {
             this.viaHeaders = ensureList(this.viaHeaders);
             this.viaHeaders.clear();
-            vias.forEach(this.viaHeaders::add);
-            indexOfVia = addTrackedListHeader(indexOfVia);
+            viaHeader = vias.get(0);
+            this.viaHeaders.addAll(vias);
         }
         return this;
     }
@@ -480,7 +469,7 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
         if (via != null) {
             this.viaHeaders = ensureList(this.viaHeaders);
             this.viaHeaders.add(0, via);
-            indexOfVia = addTrackedListHeader(indexOfVia);
+            viaHeader = via;
         }
         return this;
     }
@@ -489,7 +478,6 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
     public SipMessage.Builder<T> withTopMostViaHeader() {
         this.viaHeaders = ensureList(this.viaHeaders);
         this.viaHeaders.add(0, null);
-        indexOfVia = addTrackedListHeader(indexOfVia);
         return this;
     }
 
@@ -505,7 +493,7 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
         return this.onRequestURIFunction;
     }
 
-    private <T> List<T> ensureList(List<T> list) {
+    private <T> List<T> ensureList(final List<T> list) {
         if (list != null)  {
             return list;
         }
@@ -560,19 +548,19 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
      *
      */
     private void enforceDefaults() {
-        if (indexOfTo == -1) {
+        if (toHeader == null) {
             withToHeader(generateDefaultToHeader());
         }
 
-        if (isBuildingRequest() && indexOfMaxForwards == -1) {
+        if (isBuildingRequest() && maxForwardsHeader == null) {
             withMaxForwardsHeader(MaxForwardsHeader.create());
         }
 
-        if (indexOfCallId == -1) {
+        if (callIdHeader == null) {
             withCallIdHeader(CallIdHeader.create());
         }
 
-        if (indexOfCSeq == -1) {
+        if (cSeqHeader == null) {
             withCSeqHeader(generateDefaultCSeqHeader());
         }
     }
@@ -605,12 +593,8 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
     public T build() {
         int msgSize = 2;
 
-        short currentIndexOfVia = indexOfVia;
-        short currentIndexOfRoute = indexOfRoute;
-        short currentIndexOfRecordRoute = indexOfRecordRoute;
-
         final int headerCount = this.headers.size() + sizeOf(viaHeaders) + sizeOf(recordRouteHeaders) + sizeOf(routeHeaders);
-        final List<SipHeader> finalHeaders = new ArrayList<>(headerCount);
+        final Map<String, List<SipHeader>> finalHeaders = new HashMap<>(headerCount);
 
         SipHeader contentLengthHeader = null;
 
@@ -619,20 +603,19 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
         }
 
         // TODO: redo this, it's ugly. Bloody side effect programming & ugly ugly copy-paste crap
-        indexOfTo = -1;
-        indexOfFrom = -1;
-        indexOfCSeq = -1;
-        indexOfCallId = -1;
-        indexOfMaxForwards = -1;
-        indexOfVia = -1;
-        indexOfRoute = -1;
-        indexOfRecordRoute = -1;
-        indexOfContact = -1;
-
+        toHeader = null;
+        fromHeader = null;
+        cSeqHeader = null;
+        callIdHeader = null;
+        maxForwardsHeader = null;
+        viaHeader = null;
+        routeHeader = null;
+        recordRouteHeader = null;
+        contactHeader = null;
         for (int i = 0; i < this.headers.size(); ++i) {
             final SipHeader header = this.headers.get(i);
             if (header != null) {
-                final SipHeader finalHeader = processFinalHeader((short)finalHeaders.size(), header);
+                final SipHeader finalHeader = processFinalHeader((short) finalHeaders.size(), header);
                 if (finalHeader != null) {
                     if (finalHeader.isContentLengthHeader()) {
                         // not that it actually matters but pretty much
@@ -641,46 +624,48 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
                         contentLengthHeader = finalHeader;
                     } else {
                         msgSize += finalHeader.getBufferSize() + 2;
-                        finalHeaders.add(finalHeader);
+                        finalHeaders.computeIfAbsent(finalHeader.getName().toString(), k -> new ArrayList<>()).add(finalHeader);
                     }
                 }
-            } else if (i == currentIndexOfVia){
-                if (this.viaHeaders != null) {
-                    for (int j = 0; j < this.viaHeaders.size(); ++j) {
-                        final ViaHeader finalVia = processVia(j, this.viaHeaders.get(j));
-                        msgSize += finalVia.getBufferSize() + 2;
-                        if (j == 0) {
-                            this.indexOfVia = (short)finalHeaders.size();
-                        }
-                        finalHeaders.add(finalVia);
-                    }
+            }
+        }
+
+        if (this.viaHeaders != null) {
+            for (int j = 0; j < this.viaHeaders.size(); ++j) {
+                final ViaHeader finalVia = processVia(j, this.viaHeaders.get(j));
+                msgSize += finalVia.getBufferSize() + 2;
+                if (viaHeader == null) {
+                    viaHeader = finalVia;
                 }
-            } else if (i == currentIndexOfRecordRoute){
-                if (this.recordRouteHeaders != null) {
-                    for (int j = 0; j < this.recordRouteHeaders.size(); ++j) {
-                        final Consumer<AddressParametersHeader.Builder<RecordRouteHeader>> f =
+
+                finalHeaders.computeIfAbsent(finalVia.getName().toString(), k -> new ArrayList<>()).add(finalVia);
+            }
+        }
+
+        if (this.recordRouteHeaders != null) {
+            for (int j = 0; j < this.recordRouteHeaders.size(); ++j) {
+                final Consumer<AddressParametersHeader.Builder<RecordRouteHeader>> f =
                                 j == 0 ? this.onTopMostRecordRouteBuilder : this.onRecordRouteBuilder;
-                        final RecordRouteHeader finalRR = invokeAddressBuilderFunction(f, this.recordRouteHeaders.get(j).ensure().toRecordRouteHeader());
-                        msgSize += finalRR.getBufferSize() + 2;
-                        if (j == 0) {
-                            this.indexOfRecordRoute = (short)finalHeaders.size();
-                        }
-                        finalHeaders.add(finalRR);
-                    }
+                final RecordRouteHeader finalRR = invokeAddressBuilderFunction(f, this.recordRouteHeaders.get(j).ensure().toRecordRouteHeader());
+                msgSize += finalRR.getBufferSize() + 2;
+                if (recordRouteHeader == null) {
+                    recordRouteHeader = finalRR;
                 }
-            } else if (i == currentIndexOfRoute){
-                if (this.routeHeaders != null) {
-                    for (int j = 0; j < this.routeHeaders.size(); ++j) {
-                        final Consumer<AddressParametersHeader.Builder<RouteHeader>> f =
+
+                finalHeaders.computeIfAbsent(finalRR.getName().toString(), k -> new ArrayList<>()).add(finalRR);
+            }
+        }
+
+        if (this.routeHeaders != null) {
+            for (int j = 0; j < this.routeHeaders.size(); ++j) {
+                final Consumer<AddressParametersHeader.Builder<RouteHeader>> f =
                                 j == 0 ? this.onTopMostRouteBuilder : this.onRouteBuilder;
-                        final RouteHeader finalRoute = invokeAddressBuilderFunction(f, this.routeHeaders.get(j).ensure().toRouteHeader());
-                        msgSize += finalRoute.getBufferSize() + 2;
-                        if (j == 0) {
-                            this.indexOfRoute = (short)finalHeaders.size();
-                        }
-                        finalHeaders.add(finalRoute);
-                    }
+                final RouteHeader finalRoute = invokeAddressBuilderFunction(f, this.routeHeaders.get(j).ensure().toRouteHeader());
+                msgSize += finalRoute.getBufferSize() + 2;
+                if (routeHeader == null) {
+                    routeHeader = finalRoute;
                 }
+                finalHeaders.computeIfAbsent(finalRoute.getName().toString(), k -> new ArrayList<>()).add(finalRoute);
             }
         }
 
@@ -697,7 +682,7 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
 
         if (contentLengthHeader != null) {
             msgSize += contentLengthHeader.getBufferSize() + 2;
-            finalHeaders.add(contentLengthHeader);
+            finalHeaders.computeIfAbsent(contentLengthHeader.getName().toString(), k -> new ArrayList<>()).add(contentLengthHeader);
         }
 
         // TODO: not correct but will do for now...
@@ -717,10 +702,12 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
         msg.write(SipParser.CR);
         msg.write(SipParser.LF);
 
-        for (final SipHeader header : finalHeaders) {
-            header.getBytes(msg);
-            msg.write(SipParser.CR);
-            msg.write(SipParser.LF);
+        for (final List<SipHeader> headerValues : finalHeaders.values()) {
+            for (final SipHeader header : headerValues) {
+                header.getBytes(msg);
+                msg.write(SipParser.CR);
+                msg.write(SipParser.LF);
+            }
         }
 
         msg.write(SipParser.CR);
@@ -731,25 +718,25 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
         }
 
         return internalBuild(msg,
-                initialLine,
-                finalHeaders,
-                indexOfTo,
-                indexOfFrom,
-                indexOfCSeq,
-                indexOfCallId,
-                indexOfMaxForwards,
-                indexOfVia,
-                indexOfRoute,
-                indexOfRecordRoute,
-                indexOfContact,
-                body);
+                             initialLine,
+                             finalHeaders,
+                             toHeader,
+                             fromHeader,
+                             cSeqHeader,
+                             callIdHeader,
+                             maxForwardsHeader,
+                             viaHeader,
+                             routeHeader,
+                             recordRouteHeader,
+                             contactHeader,
+                             body);
     }
 
     private ViaHeader processVia(final int index, final SipHeader header) throws SipParseException {
         if (index > 0 && this.onViaBuilder == null) {
             if (header == null) {
                 throw new SipParseException("You cannot register an empty Via-header and "
-                        + "then not also register a function for that via. Please refer to javadoc");
+                                            + "then not also register a function for that via. Please refer to javadoc");
             }
             return header.ensure().toViaHeader();
         }
@@ -757,7 +744,7 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
         if (index == 0 && this.onTopMostViaBuilder == null) {
             if (header == null) {
                 throw new SipParseException("You cannot register an empty top-most Via-header and "
-                        + "then not also register a function for that top-most via. Please refer to the javadoc");
+                                            + "then not also register a function for that top-most via. Please refer to the javadoc");
             }
             return header.ensure().toViaHeader();
         }
@@ -777,39 +764,39 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
 
     protected abstract T internalBuild(final Buffer message,
                                        final SipInitialLine initialLine,
-                                       final List<SipHeader> headers,
-                                       final short indexOfTo,
-                                       final short indexOfFrom,
-                                       final short indexOfCSeq,
-                                       final short indexOfCallId,
-                                       final short indexOfMaxForwards,
-                                       final short indexOfVia,
-                                       final short indexOfRoute,
-                                       final short indexOfRecordRoute,
-                                       final short indexOfContact,
+                                       final Map<String, List<SipHeader>> headers,
+                                       final SipHeader toHeader,
+                                       final SipHeader fromHeader,
+                                       final SipHeader cSeqHeader,
+                                       final SipHeader callIdHeader,
+                                       final SipHeader maxForwardsHeader,
+                                       final SipHeader viaHeader,
+                                       final SipHeader routeHeader,
+                                       final SipHeader recordRouteHeader,
+                                       final SipHeader contactHeader,
                                        final Buffer body);
 
     private SipHeader processFinalHeader(final short index, final SipHeader header) {
-        SipHeader finalHeader = header;
+        final SipHeader finalHeader;
 
         if (header.isContactHeader()) {
-            indexOfContact = index;
             finalHeader = invokeContactHeaderFunction(header.ensure().toContactHeader());
+            contactHeader = finalHeader;
         } else if (header.isCSeqHeader()) {
-            indexOfCSeq = index;
             finalHeader = header.ensure().toCSeqHeader();
+            cSeqHeader = finalHeader;
         } else if (header.isMaxForwardsHeader()) {
             finalHeader = invokeMaxForwardsFunction(header.ensure().toMaxForwardsHeader());
-            indexOfMaxForwards = index;
+            maxForwardsHeader = finalHeader;
         } else if (header.isFromHeader()) {
-            indexOfFrom = index;
             finalHeader = invokeFromHeaderFunction(header.ensure().toFromHeader());
+            fromHeader = finalHeader;
         } else if (header.isToHeader()) {
-            indexOfTo = index;
-            finalHeader = invokeToHeaderFunction(header.ensure().toToHeader());
+            finalHeader  = invokeToHeaderFunction(header.ensure().toToHeader());
+            toHeader = finalHeader;
         } else if (header.isCallIdHeader()) {
             finalHeader = header.ensure().toCallIdHeader();
-            indexOfCallId = index;
+            callIdHeader = finalHeader;
         } else {
             finalHeader = processGenericHeader(header);
         }
@@ -818,7 +805,7 @@ public abstract class SipMessageBuilder<T extends SipMessage> implements SipMess
     }
 
     private <T extends SipHeader> T invokeSipHeaderBuilderFunction(final Consumer<SipHeader.Builder<T>> f,
-                                                                               final T header) {
+                                                                   final T header) {
         if (header != null && f != null) {
             final SipHeader.Builder<T> b = header.copy();
             f.accept(b);

@@ -250,6 +250,14 @@ public class EmptyBuffer implements Buffer {
      * {@inheritDoc}
      */
     @Override
+    public long getUnsignedInt(final int index) throws IndexOutOfBoundsException {
+        throw new IndexOutOfBoundsException(THIS_BUFFER_IS_EMPTY);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public short getUnsignedByte(final int index) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException(THIS_BUFFER_IS_EMPTY);
     }
@@ -343,7 +351,7 @@ public class EmptyBuffer implements Buffer {
     }
 
     @Override
-    public void write(byte[] bytes) throws IndexOutOfBoundsException, WriteNotSupportedException {
+    public void write(final byte[] bytes) throws IndexOutOfBoundsException, WriteNotSupportedException {
         throw new WriteNotSupportedException("This is an empty buffer. Cant write to it");
     }
 
@@ -384,7 +392,7 @@ public class EmptyBuffer implements Buffer {
     }
 
     @Override
-    public void setWriterIndex(int index) {
+    public void setWriterIndex(final int index) {
         throw new WriteNotSupportedException("This is an empty buffer. Cant write to it");
     }
 
@@ -449,7 +457,7 @@ public class EmptyBuffer implements Buffer {
 
         try {
             return ((Buffer) other).isEmpty();
-        } catch (NullPointerException | ClassCastException e) {
+        } catch (final NullPointerException | ClassCastException e) {
             return false;
         }
     }

@@ -4,7 +4,7 @@
 package io.pkts.buffer;
 
 import java.io.InputStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @author jonas@jonasborjesson.com
@@ -77,7 +77,7 @@ public final class Buffers {
             return Buffers.EMPTY_BUFFER;
         }
 
-        return Buffers.wrap(s.getBytes(Charset.forName("UTF-8")));
+        return Buffers.wrap(s.getBytes(StandardCharsets.UTF_8));
     }
 
     public static Buffer wrap(final InputStream is) {
@@ -187,6 +187,18 @@ public final class Buffers {
         final int readerIndex = 0;
         final int writerIndex = upperBoundary;
         return new ByteBuffer(readerIndex, lowerBoundary, upperBoundary, writerIndex, buffer);
+    }
+
+    public static void assertNotEmpty(final Buffer buffer) {
+        if (buffer == null || buffer.isEmpty()) {
+            throw new IllegalArgumentException("The Buffer is null or empty");
+        }
+    }
+
+    public static void assertNotEmpty(final Buffer buffer, final String msg) {
+        if (buffer == null || buffer.isEmpty()) {
+            throw new IllegalArgumentException(msg);
+        }
     }
 
     /**

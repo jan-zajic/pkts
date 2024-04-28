@@ -85,7 +85,7 @@ public interface Address {
             doubleQuote = true;
         }
 
-        final Buffer displayName = SipParser.consumeDisplayName(buffer);
+        final Buffer displayName = SipParser.consumeDisplayName(doubleQuote, buffer);
         boolean leftAngleBracket = true;
 
         // handle the case of an address that looks like:
@@ -135,7 +135,7 @@ public interface Address {
                         "Unable to parse the uri (addr-spec) portion of the address");
             }
         } else {
-            addrSpec = SipParser.consumeAddressSpec(buffer);
+            addrSpec = SipParser.consumeAddressSpec(true, buffer);
         }
 
         if (addrSpec == null) {

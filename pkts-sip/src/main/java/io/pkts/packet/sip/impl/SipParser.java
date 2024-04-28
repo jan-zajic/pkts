@@ -23,13 +23,17 @@ import io.pkts.packet.sip.header.ViaHeader;
 import io.pkts.packet.sip.header.impl.SipHeaderImpl;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+
+
+
+
 
 /**
  * Basic sip parser that contains most (all?) of the different grammar rules for SIP as defined by
@@ -177,6 +181,16 @@ public class SipParser {
     public static final byte LAQUOT = '<';
 
     /**
+     * Left square bracket
+     */
+    public static final byte LSBRACKET = '[';
+
+    /**
+     * Right square bracket
+     */
+    public static final byte RSBRACKET = ']';
+
+    /**
      * Double quotation mark
      */
     public static final byte DQUOT = '"';
@@ -239,7 +253,7 @@ public class SipParser {
         if (framer != null) {
             return framer;
         }
-        for (Map.Entry<Buffer, Function<SipHeader, ? extends SipHeader>> entry : framers.entrySet()) {
+        for (final Map.Entry<Buffer, Function<SipHeader, ? extends SipHeader>> entry : framers.entrySet()) {
             if (entry.getKey().equalsIgnoreCase(b)) {
                 return entry.getValue();
             }
@@ -328,7 +342,7 @@ public class SipParser {
     public static boolean isSCTP(final Buffer t) {
         try {
             return t.capacity() == 4 && t.getByte(0) == 'S' && t.getByte(1) == 'C' && t.getByte(2) == 'T'
-                    && t.getByte(3) == 'P';
+                   && t.getByte(3) == 'P';
         } catch (final IOException e) {
             return false;
         }
@@ -387,7 +401,7 @@ public class SipParser {
     public static boolean isSCTPLower(final Buffer t) {
         try {
             return t.capacity() == 4 && t.getByte(0) == 's' && t.getByte(1) == 'c' && t.getByte(2) == 't'
-                    && t.getByte(3) == 'p';
+                   && t.getByte(3) == 'p';
         } catch (final IOException e) {
             return false;
         }
@@ -411,7 +425,7 @@ public class SipParser {
 
         if (b != 's') {
             throw new SipParseException(buffer.getReaderIndex() - 1,
-                    "Expected 's' since the only schemes accepted are \"sip\" and \"sips\"");
+                                        "Expected 's' since the only schemes accepted are \"sip\" and \"sips\"");
         }
 
         SipParser.expect(buffer, SipParser.COLON);
@@ -443,7 +457,7 @@ public class SipParser {
      * @throws IndexOutOfBoundsException
      */
     public static List<Buffer[]> consumeGenericParams(final Buffer buffer) throws IndexOutOfBoundsException,
-            IOException {
+                    IOException {
         final List<Buffer[]> params = new ArrayList<Buffer[]>();
         while (buffer.hasReadableBytes() && buffer.peekByte() == SEMI) {
             buffer.readByte(); // consume the SEMI
@@ -496,8 +510,8 @@ public class SipParser {
                 value = consumeToken(buffer);
             }
         }
-        return new Buffer[] {
-                key, value };
+        return new Buffer[]{
+                        key, value};
     }
 
     /**
@@ -511,12 +525,8 @@ public class SipParser {
      * @return true if the next byte to read indeed is what we hope it is
      */
     public static boolean isNext(final Buffer buffer, final byte b) throws IOException {
-        if (buffer.hasReadableBytes()) {
-            final byte actual = buffer.peekByte();
-            return actual == b;
-        }
 
-        return false;
+        return buffer.hasReadableBytes() && buffer.peekByte() == b;
     }
 
     /**
@@ -682,7 +692,7 @@ public class SipParser {
      * @throws IndexOutOfBoundsException
      */
     public static int consumeSLASH(final Buffer buffer) throws SipParseException, IndexOutOfBoundsException,
-            IOException {
+                    IOException {
         return consumeSeparator(buffer, SLASH);
     }
 
@@ -705,7 +715,7 @@ public class SipParser {
                 }
             } else {
                 throw new SipParseException(buffer.getReaderIndex(),
-                        "Expected WS but nothing more to read in the buffer");
+                                            "Expected WS but nothing more to read in the buffer");
             }
         } catch (final IOException e) {
             throw new SipParseException(buffer.getReaderIndex(), UNABLE_TO_READ_FROM_STREAM, e);
@@ -726,16 +736,8 @@ public class SipParser {
      * @return
      */
     public static int consumeSWS(final Buffer buffer) {
-        try {
-            return consumeLWS(buffer);
-        } catch (final SipParseException e) {
-            // ignore since currently the consumeLWS will ONLY
-            // throw this exception when it expected a WS at a
-            // particular place and since SWS is all optional
-            // we will silently just consume it, but return
-            // false however
-            return 0;
-        }
+
+        return consumeLWS(buffer);
     }
 
     /**
@@ -750,7 +752,7 @@ public class SipParser {
      * @throws IndexOutOfBoundsException
      */
     public static int consumeSTAR(final Buffer buffer) throws SipParseException, IndexOutOfBoundsException,
-            IOException {
+                    IOException {
         return consumeSeparator(buffer, STAR);
     }
 
@@ -841,7 +843,7 @@ public class SipParser {
      * @throws IndexOutOfBoundsException
      */
     public static int consumeCOMMA(final Buffer buffer) throws SipParseException, IndexOutOfBoundsException,
-            IOException {
+                    IOException {
         return consumeSeparator(buffer, COMMA);
     }
 
@@ -857,7 +859,7 @@ public class SipParser {
      * @throws IndexOutOfBoundsException
      */
     public static int consumeSEMI(final Buffer buffer) throws SipParseException, IndexOutOfBoundsException,
-            IOException {
+                    IOException {
         return consumeSeparator(buffer, SEMI);
     }
 
@@ -873,7 +875,7 @@ public class SipParser {
      * @throws IndexOutOfBoundsException
      */
     public static int consumeCOLON(final Buffer buffer) throws SipParseException, IndexOutOfBoundsException,
-            IOException {
+                    IOException {
         return consumeSeparator(buffer, COLON);
     }
 
@@ -889,7 +891,7 @@ public class SipParser {
      * @throws IndexOutOfBoundsException
      */
     public static int consumeLDQUOT(final Buffer buffer) throws SipParseException, IndexOutOfBoundsException,
-            IOException {
+                    IOException {
         buffer.markReaderIndex();
         int consumed = consumeSWS(buffer);
         if (isNext(buffer, DQUOT)) {
@@ -914,7 +916,7 @@ public class SipParser {
      * @throws IndexOutOfBoundsException
      */
     public static int consumeRDQUOT(final Buffer buffer) throws SipParseException, IndexOutOfBoundsException,
-            IOException {
+                    IOException {
         buffer.markReaderIndex();
         int consumed = 0;
         if (isNext(buffer, DQUOT)) {
@@ -947,7 +949,6 @@ public class SipParser {
      * COLON   =  SWS ":" SWS ; colon
      * LDQUOT  =  SWS DQUOTE; open double quotation mark
      * RDQUOT  =  DQUOTE SWS ; close double quotation mark
-
      * @param buffer
      * @param b
      * @return the number of bytes that was consumed.
@@ -955,7 +956,7 @@ public class SipParser {
      * @throws IndexOutOfBoundsException
      */
     private static int consumeSeparator(final Buffer buffer, final byte b) throws IndexOutOfBoundsException,
-            IOException {
+                    IOException {
         buffer.markReaderIndex();
         int consumed = consumeSWS(buffer);
         if (isNext(buffer, b)) {
@@ -983,7 +984,7 @@ public class SipParser {
      *             in case there is no token
      */
     public static Buffer expectToken(final Buffer buffer) throws IndexOutOfBoundsException, IOException,
-            SipParseException {
+                    SipParseException {
         final Buffer token = consumeToken(buffer);
         if (token == null) {
             throw new SipParseException(buffer.getReaderIndex(), "Expected TOKEN");
@@ -1045,7 +1046,32 @@ public class SipParser {
      * @throws SipParseException
      */
     public static Buffer consumeDisplayName(final Buffer buffer) throws IOException, SipParseException {
-        if (isNext(buffer, DQUOT)) {
+
+        return consumeDisplayName(isNext(buffer, DQUOT), buffer);
+    }
+
+    /**
+     * The display name in SIP is a little tricky since it may or may not be
+     * there and the stuff following it (whether or not it was there to begin
+     * with) can easily be confused with being a display name.
+     *
+     * Note, a display name in SIP is only part of of the "name-addr" construct
+     * and this function assumes that (even though it actually would work like a
+     * regular {@link #consumeToken(Buffer)} in some cases)
+     *
+     * <pre>
+     * name-addr      =  [ display-name ] LAQUOT addr-spec RAQUOT
+     * display-name   =  *(token LWS)/ quoted-string
+     * </pre>
+     *
+     * @param quoted
+     * @param buffer
+     * @return the display name or null if there was none
+     * @throws IOException
+     * @throws SipParseException
+     */
+    public static Buffer consumeDisplayName(final boolean quoted, final Buffer buffer) throws IOException, SipParseException {
+        if (quoted) {
             return consumeQuotedString(buffer);
         }
 
@@ -1067,6 +1093,11 @@ public class SipParser {
         return potentialDisplayName;
     }
 
+    public static Buffer consumeAddressSpec(final Buffer buffer) throws IndexOutOfBoundsException, IOException,
+                    SipParseException {
+        return consumeAddressSpec(false, buffer);
+    }
+
     /**
      * Consumes addr-spec, which according to RFC3261 section 25.1 is:
      *
@@ -1079,7 +1110,7 @@ public class SipParser {
      *
      * absoluteURI    =  scheme ":" ( hier-part / opaque-part )
      * </pre>
-     *
+     * <p>
      * And as you can see, it gets complicated. Also, these consume-functions
      * are not to validate the exact grammar but rather to find the boundaries
      * so the strategy for consuming the addr-spec is:
@@ -1087,25 +1118,27 @@ public class SipParser {
      * <li>If '>' is encountered, then we assume that this addr-spec is within a
      * name-addr so we stop here</li>
      * <li>If a white space or end-of-line is encountered, we also assume we are
-     * done.</li>
+     * done UNLESS the calling code knows that we are in a protected "< >" then
+     * we should allow for white space. See issue-106 </li>
      * </ul>
      *
-     * Note, I think the above is safe since I do believe you cannot have a
-     * white space or a quoted string (which could have contained white space)
-     * within any of the elements that are part of the addr-spec... Anyone?
+     * <p>
+     * Because of <a href="https://github.com/aboutsip/pkts/issues/106">issue-106</a> the <code>isProtected</code>
+     * boolean was introduced to allow for spaces after the initial ";' when we know the entire
+     * <code>addr-spec</code> is e.g. "protected" inside of angle brackets "< >", which is often the case
+     * when we parse out a <code>name-addr</code>, as we do in {@link io.pkts.packet.sip.address.Address#frame(Buffer)}.
+     * </p>
      *
      * @return
      * @throws IOException
      * @throws IndexOutOfBoundsException
-     * @throws SipParseException
-     *             in case we cannot successfully frame the addr-spec.
+     * @throws SipParseException         in case we cannot successfully frame the addr-spec.
      */
-    public static Buffer consumeAddressSpec(final Buffer buffer) throws IndexOutOfBoundsException, IOException,
-            SipParseException {
-        buffer.markReaderIndex();
+    public static Buffer consumeAddressSpec(final boolean isProtected, final Buffer buffer) throws IndexOutOfBoundsException, IOException,
+                    SipParseException {
+        final int startIndex = buffer.getReaderIndex();
         int count = 0;
-        int state = 0; // zero is to look for colon, everything else is to find
-        // the end
+        int state = 0; // zero is to look for colon, everything else is to find the end
         boolean done = false;
 
         while (buffer.hasReadableBytes() && !done) {
@@ -1117,15 +1150,19 @@ public class SipParser {
                 throw new SipParseException(buffer.getReaderIndex(), "No scheme found after 100 bytes, giving up");
             } else if (count > MAX_LOOK_AHEAD) {
                 throw new SipParseException(buffer.getReaderIndex(),
-                        "Have not been able to find the entire addr-spec after " + count + " bytes, giving up");
+                                            "Have not been able to find the entire addr-spec after " + count + " bytes, giving up");
             } else if (state == 0 && b == COLON) {
                 state = 1;
-            } else if (state == 1 && (b == RAQUOT || b == SP || b == HTAB || b == CR || b == LF)) {
+            } else if (state == 1 && (b == RAQUOT || b == CR || b == LF)) {
+                done = true;
+                --count;
+            } else if (!isProtected && state == 1 && (b == SP || b == HTAB)) {
+                // https://github.com/aboutsip/pkts/issues/106
                 done = true;
                 --count;
             }
         }
-        buffer.resetReaderIndex();
+        buffer.setReaderIndex(startIndex);
 
         // didn't find the scheme portion
         if (state == 0) {
@@ -1302,7 +1339,9 @@ public class SipParser {
 
         consumeSWS(buffer);
         result[0] = consumeSentProtocol(buffer);
-        consumeLWS(buffer);
+        if(consumeLWS(buffer) == 0){
+            throw new SipParseException(buffer.getReaderIndex(), "Expected at least 1 WSP");
+        }
 
         final int index = buffer.getReaderIndex();
         while (indexOfSemi == 0 && buffer.hasReadableBytes() && ++count < MAX_LOOK_AHEAD) {
@@ -1322,8 +1361,8 @@ public class SipParser {
 
         if (count == MAX_LOOK_AHEAD) {
             throw new SipParseException(buffer.getReaderIndex(),
-                    "Unable to find the parameters part of the Via-header "
-                            + "even after searching for " + MAX_LOOK_AHEAD + " bytes.");
+                                        "Unable to find the parameters part of the Via-header "
+                                        + "even after searching for " + MAX_LOOK_AHEAD + " bytes.");
         }
 
         if (indexOfSemi == 0) {
@@ -1331,7 +1370,7 @@ public class SipParser {
             // if there are no parameters present at all then there
             // is no chance of it being present.
             throw new SipParseException(buffer.getReaderIndex(),
-                    "No via-parameters found. The Via-header MUST contain at least the branch parameter.");
+                                        "No via-parameters found. The Via-header MUST contain at least the branch parameter.");
         }
 
         buffer.setReaderIndex(index);
@@ -1353,7 +1392,7 @@ public class SipParser {
             // indication an strange number of colons. May be the strange
             // ipv4 address after ipv6 thing which we currently dont handle
             throw new SipParseException(indexOfLastColon, "Found " + countOfColons + " which seems odd."
-                    + " Expecting 0, 1, 7 or 8 colons in the Via-host:port portion. Please check your traffic");
+                                                          + " Expecting 0, 1, 7 or 8 colons in the Via-host:port portion. Please check your traffic");
         }
 
         final List<Buffer[]> params = consumeGenericParams(buffer);
@@ -1435,8 +1474,8 @@ public class SipParser {
             buffer.readByte(); // consume ':'
             port = consumePort(buffer);
         }
-        return new Buffer[] {
-                host, port };
+        return new Buffer[]{
+                        host, port};
     }
 
     /**
@@ -1499,7 +1538,7 @@ public class SipParser {
             throw new SipParseException(buffer.getReaderIndex(), "Tried to consume m-type but buffer ended abruptly", e);
         } catch (final IOException e) {
             throw new SipParseException(buffer.getReaderIndex(),
-                    "Tried to consume m-type but problem reading from underlying stream", e);
+                                        "Tried to consume m-type but problem reading from underlying stream", e);
         }
     }
 
@@ -1530,7 +1569,7 @@ public class SipParser {
             throw new SipParseException(buffer.getReaderIndex(), "Tried to consume m-type but buffer ended abruptly", e);
         } catch (final IOException e) {
             throw new SipParseException(buffer.getReaderIndex(),
-                    "Tried to consume m-type but problem reading from underlying stream", e);
+                                        "Tried to consume m-type but problem reading from underlying stream", e);
         }
     }
 
@@ -1551,8 +1590,8 @@ public class SipParser {
         while (buffer.hasReadableBytes() && !done) {
             final byte b = buffer.readByte();
             final boolean ok = isAlphaNum(b) || b == DASH || b == PERIOD || b == EXCLAMATIONPOINT
-                    || b == PERCENT || b == STAR || b == UNDERSCORE || b == PLUS || b == BACKTICK
-                    || b == TICK || b == TILDE;
+                               || b == PERCENT || b == STAR || b == UNDERSCORE || b == PLUS || b == BACKTICK
+                               || b == TICK || b == TILDE;
             if (ok) {
                 ++count;
             } else {
@@ -1628,7 +1667,7 @@ public class SipParser {
      * Helper method for checking whether the supplied byte is a alphanumeric
      * character or not.
      *
-     * @param b
+     * @param ch
      * @return true if the byte is indeed a alphanumeric character, false
      *         otherwise
      */
@@ -1646,6 +1685,14 @@ public class SipParser {
 
     public static boolean isDigit(final byte b) {
         return isDigit((char) b);
+    }
+
+    public static boolean isHexDigit(final char ch) {
+        return ch >= 48 && ch <= 57 || ch >= 65 && ch <= 70 || ch >= 97 && ch <= 102;
+    }
+
+    public static boolean isHexDigit(final byte b) {
+        return isHexDigit((char) b);
     }
 
     public static boolean isAlpha(final char ch) {
@@ -1675,7 +1722,7 @@ public class SipParser {
         }
         consumeWS(buffer);
         if (buffer.getReaderIndex() == i) {
-            throw new SipParseException(i, "Expected at least 1 WSP");
+            return 0;
         }
         return buffer.getReaderIndex() - i;
     }
@@ -1690,9 +1737,7 @@ public class SipParser {
     public static int consumeCRLF(final Buffer buffer) throws SipParseException {
         try {
             buffer.markReaderIndex();
-            final byte cr = buffer.readByte();
-            final byte lf = buffer.readByte();
-            if (cr == CR && lf == LF) {
+            if (buffer.readByte() == CR && buffer.readByte() == LF) {
                 return 2;
             }
         } catch (final IndexOutOfBoundsException e) {
@@ -1718,10 +1763,10 @@ public class SipParser {
     public static void expect(final Buffer buffer, final byte expected) throws SipParseException, IOException {
         final byte actual = buffer.readByte();
         if (actual != expected) {
-            final String actualStr = new String(new byte[] { actual }, Charset.forName("UTF-8"));
-            final String expectedStr = new String(new byte[] { expected });
+            final String actualStr = new String(new byte[]{actual}, StandardCharsets.UTF_8);
+            final String expectedStr = new String(new byte[]{expected});
             throw new SipParseException(buffer.getReaderIndex(), "Expected '" + expected + "' (" + expectedStr
-                    + ") got '" + actual + "' (" + actualStr + ")");
+                                                                 + ") got '" + actual + "' (" + actualStr + ")");
         }
     }
 
@@ -1733,15 +1778,14 @@ public class SipParser {
      */
     public static int consumeWS(final Buffer buffer) throws SipParseException {
         try {
-            boolean done = false;
             int count = 0;
-            while (buffer.hasReadableBytes() && !done) {
-                if (isNext(buffer, SP) || isNext(buffer, HTAB)) {
-                    buffer.readByte();
-                    ++count;
-                } else {
-                    done = true;
+            while (buffer.hasReadableBytes()) {
+                if (!isNext(buffer, SP) && !isNext(buffer, HTAB)) {
+                    return count;
                 }
+
+                buffer.readByte();
+                ++count;
             }
             return count;
         } catch (final IOException e) {
@@ -1754,7 +1798,7 @@ public class SipParser {
      *
      * @param buffer
      *            the buffer that we will check.
-     * @param expected
+     * @param ch
      *            the expected char
      * @throws SipParseException
      *             in case the expected char is not the next char in the buffer
@@ -1882,7 +1926,7 @@ public class SipParser {
     private static boolean isDateHeader(final Buffer name) {
         try {
             return name.getByte(0) == 'D' && name.getByte(1) == 'a' &&
-                    name.getByte(2) == 't' && name.getByte(3) == 'e';
+                   name.getByte(2) == 't' && name.getByte(3) == 'e';
         } catch (final IOException e) {
             return false;
         }
@@ -1891,8 +1935,8 @@ public class SipParser {
     private static boolean isAllowHeader(final Buffer name) {
         try {
             return name.getByte(0) == 'A' && name.getByte(1) == 'l' &&
-                    name.getByte(2) == 'l' && name.getByte(3) == 'o' &&
-                    name.getByte(4) == 'w';
+                   name.getByte(2) == 'l' && name.getByte(3) == 'o' &&
+                   name.getByte(4) == 'w';
         } catch (final IOException e) {
             return false;
         }
@@ -1909,11 +1953,11 @@ public class SipParser {
     private static boolean isAllowEventsHeader(final Buffer name) {
         try {
             return name.getByte(0) == 'A' && name.getByte(1) == 'l' &&
-                    name.getByte(2) == 'l' && name.getByte(3) == 'o' &&
-                    name.getByte(4) == 'w' && name.getByte(5) == '-' &&
-                    name.getByte(6) == 'E' && name.getByte(7) == 'v' &&
-                    name.getByte(8) == 'e' && name.getByte(9) == 'n' &&
-                    name.getByte(10) == 't' && name.getByte(11) == 's';
+                   name.getByte(2) == 'l' && name.getByte(3) == 'o' &&
+                   name.getByte(4) == 'w' && name.getByte(5) == '-' &&
+                   name.getByte(6) == 'E' && name.getByte(7) == 'v' &&
+                   name.getByte(8) == 'e' && name.getByte(9) == 'n' &&
+                   name.getByte(10) == 't' && name.getByte(11) == 's';
         } catch (final IOException e) {
             return false;
         }
@@ -1922,9 +1966,9 @@ public class SipParser {
     private static boolean isSubjectHeader(final Buffer name) {
         try {
             return name.getByte(0) == 'S' && name.getByte(1) == 'u' &&
-                    name.getByte(2) == 'b' && name.getByte(3) == 'j' &&
-                    name.getByte(4) == 'e' && name.getByte(5) == 'c' &&
-                    name.getByte(6) == 't';
+                   name.getByte(2) == 'b' && name.getByte(3) == 'j' &&
+                   name.getByte(4) == 'e' && name.getByte(5) == 'c' &&
+                   name.getByte(6) == 't';
         } catch (final IOException e) {
             return false;
         }
@@ -1939,6 +1983,7 @@ public class SipParser {
         public int start;
         public int stop = -1;
         public boolean foundCR = false;
+        public boolean foundLF = false;
         public boolean foundCRLF = false;
         public boolean foundComma = false;
         public boolean insideQuotedString = false;
@@ -1954,6 +1999,7 @@ public class SipParser {
             values = new ArrayList<>(2);
             stop = -1;
             foundCR = false;
+            foundLF = false;
             foundCRLF = false;
             foundComma = false;
             insideQuotedString = false;
@@ -1971,8 +2017,10 @@ public class SipParser {
                     state.insideQuotedString = !state.insideQuotedString;
                     break;
                 case LF:
+                    state.foundLF = true;
                     state.foundCRLF = state.foundCR;
-                    state.stop = buffer.getReaderIndex() - 2;
+                    final int separatorLen = state.foundCRLF ? 2 : 1;
+                    state.stop = buffer.getReaderIndex() - separatorLen;
                     break;
                 case CR:
                     state.foundCR = true;
@@ -1994,7 +2042,7 @@ public class SipParser {
                     break;
             }
 
-            if (state.foundCRLF) {
+            if (state.foundCRLF || state.foundLF) {
                 state.values.add(buffer.slice(state.start, state.stop));
                 // if (isNext(buffer, LF)) {
                 // buffer.readByte();
@@ -2017,6 +2065,7 @@ public class SipParser {
                 }
 
                 state.foundCR = false;
+                state.foundLF = false;
                 state.foundCRLF = false;
                 state.foundComma = false;
                 state.start = buffer.getReaderIndex();
@@ -2094,7 +2143,7 @@ public class SipParser {
                     for (final Buffer line : foldedLines) {
                         stupid += " " + line.toString();
                     }
-                    valueBuffer = Buffers.wrap(stupid.getBytes(Charset.forName("UTF-8")));
+                    valueBuffer = Buffers.wrap(stupid.getBytes(StandardCharsets.UTF_8));
                     consumeWS(valueBuffer);
                 }
             }
@@ -2114,85 +2163,35 @@ public class SipParser {
      * @return the framed {@link SipMessage}
      */
     public static SipMessage frame(final Buffer buffer) throws IOException {
-        if (true)
-            return frame2(buffer);
 
         if (!couldBeSipMessage(buffer)) {
             throw new SipParseException(0, "Cannot be a SIP message because is doesnt start with \"SIP\" "
-                    + "(for responses) or a method (for requests)");
-        }
-
-        // we just assume that the initial line
-        // indeed is a correct sip line
-        final Buffer rawInitialLine = buffer.readLine();
-
-        // which means that the headers are about
-        // to start now.
-        final int startHeaders = buffer.getReaderIndex();
-
-        Buffer currentLine = null;
-        while ((currentLine = buffer.readLine()) != null && currentLine.hasReadableBytes()) {
-            // just moving along, we don't really care why
-            // we stop, we have found what we want anyway, which
-            // is the boundary between headers and the potential
-            // payload (or end of message)
-        }
-
-        final Buffer headers = buffer.slice(startHeaders, buffer.getReaderIndex());
-        Buffer payload = null;
-        if (buffer.hasReadableBytes()) {
-            payload = buffer.slice();
-        }
-
-        if (SipInitialLine.isResponseLine(rawInitialLine)) {
-            throw new RuntimeException("No longer using the old mutable sip messages");
-            // return new SipResponseImpl(rawInitialLine, headers, payload);
-        } else {
-            throw new RuntimeException("No longer using the old mutable sip messages");
-            // return new SipRequestImpl(rawInitialLine, headers, payload);
-        }
-    }
-
-    /**
-     *
-     * @param buffer
-     * @return
-     * @throws IOException
-     */
-    public static SipMessage frame2(final Buffer buffer) throws IOException {
-        if (!couldBeSipMessage(buffer)) {
-            throw new SipParseException(0, "Cannot be a SIP message because is doesnt start with \"SIP\" "
-                    + "(for responses) or a method (for requests)");
+                                           + "(for responses) or a method (for requests)");
         }
 
         final int startIndex = buffer.getReaderIndex();
 
         final SipInitialLine initialLine = SipInitialLine.parse(buffer.readLine());
 
-        // which means that the headers are about
-        // to start now.
-        final int startHeaders = buffer.getReaderIndex();
-
         // Move along as long as we actually can consume an header and
-        Buffer headerName = null;
-        final List<SipHeader> headers = new ArrayList<>();
-        short count = 0;
+        Buffer headerName;
+        SipHeader header;
+        SipHeader toHeader = null;
+        SipHeader fromHeader = null;
+        SipHeader cSeqHeader = null;
+        SipHeader callIdHeader = null;
+        SipHeader maxForwardsHeader = null;
+        SipHeader viaHeader = null;
+        SipHeader routeHeader = null;
+        SipHeader recordRouteHeader = null;
+        SipHeader contactHeader = null;
+        final Map<String, List<SipHeader>> headers = new HashMap<>();
         int contentLength = 0;
 
-        short indexOfTo = -1;
-        short indexOfFrom = -1;
-        short indexOfCSeq = -1;
-        short indexOfCallId = -1;
-        short indexOfMaxForwards = -1;
-        short indexOfVia = -1;
-        short indexOfRoute = -1;
-        short indexOfRecordRoute = -1;
-        short indexOfContact = -1;
-
-        while (consumeCRLF(buffer) != 2 && (headerName = SipParser.nextHeaderName(buffer)) != null ) {
+        while (consumeCRLF(buffer) != 2 && (headerName = SipParser.nextHeaderName(buffer)) != null) {
             final List<Buffer> values = readHeaderValues(headerName, buffer).values;
             for (final Buffer value : values) {
-                SipHeader header = new SipHeaderImpl(headerName, value);
+                header = new SipHeaderImpl(headerName, value);
                 // The headers that are most commonly used will be fully
                 // parsed just because no stack can really function without
                 // looking into these headers.
@@ -2200,37 +2199,36 @@ public class SipParser {
                     final ContentLengthHeader l = header.ensure().toContentLengthHeader();
                     contentLength = l.getContentLength();
                     header = l;
-                } else if (header.isContactHeader() && indexOfContact == -1) {
+                } else if (contactHeader == null && header.isContactHeader()) {
                     header = header.ensure();
-                    indexOfContact = count;
-                } else if (header.isCSeqHeader() && indexOfCSeq == -1) {
+                    contactHeader = header;
+                } else if (cSeqHeader == null && header.isCSeqHeader()) {
                     header = header.ensure();
-                    indexOfCSeq = count;
-                } else if (header.isMaxForwardsHeader() && indexOfMaxForwards == -1) {
+                    cSeqHeader = header;
+                } else if ( maxForwardsHeader == null && header.isMaxForwardsHeader()) {
                     header = header.ensure();
-                    indexOfMaxForwards = count;
-                } else if (header.isFromHeader() && indexOfFrom == -1) {
+                    maxForwardsHeader = header;
+                } else if (fromHeader == null && header.isFromHeader()) {
                     header = header.ensure();
-                    indexOfFrom = count;
-                } else if (header.isToHeader() && indexOfTo == -1) {
+                    fromHeader = header;
+                } else if (toHeader == null && header.isToHeader()) {
                     header = header.ensure();
-                    indexOfTo = count;
-                } else if (header.isViaHeader() && indexOfVia == -1) {
+                    toHeader = header;
+                } else if (viaHeader == null && header.isViaHeader()) {
                     header = header.ensure();
-                    indexOfVia = count;
-                } else if (header.isCallIdHeader() && indexOfCallId == -1) {
+                    viaHeader = header;
+                } else if (callIdHeader == null && header.isCallIdHeader()) {
                     header = header.ensure();
-                    indexOfCallId = count;
-                } else if (header.isRouteHeader() && indexOfRoute == -1) {
+                    callIdHeader = header;
+                } else if (routeHeader == null && header.isRouteHeader()) {
                     header = header.ensure();
-                    indexOfRoute = count;
-                } else if (header.isRecordRouteHeader() && indexOfRecordRoute == -1) {
+                    routeHeader = header;
+                } else if (recordRouteHeader == null && header.isRecordRouteHeader()) {
                     header = header.ensure();
-                    indexOfRecordRoute = count;
+                    recordRouteHeader = header;
                 }
 
-                headers.add(header);
-                ++count;
+                headers.computeIfAbsent(headerName.toString(), k -> new ArrayList<>(4)).add(header);
             }
         }
 
@@ -2249,29 +2247,33 @@ public class SipParser {
         final Buffer msg = buffer.slice(startIndex, buffer.getReaderIndex());
 
         if (initialLine.isRequestLine()) {
-            return new ImmutableSipRequest(msg, initialLine.toRequestLine(), headers,
-                    indexOfTo,
-                    indexOfFrom,
-                    indexOfCSeq,
-                    indexOfCallId,
-                    indexOfMaxForwards,
-                    indexOfVia,
-                    indexOfRoute,
-                    indexOfRecordRoute,
-                    indexOfContact,
-                    payload);
+            return new ImmutableSipRequest(msg,
+                                           initialLine.toRequestLine(),
+                                           headers,
+                                           toHeader,
+                                           fromHeader,
+                                           cSeqHeader,
+                                           callIdHeader,
+                                           maxForwardsHeader,
+                                           viaHeader,
+                                           routeHeader,
+                                           recordRouteHeader,
+                                           contactHeader,
+                                           payload);
         } else {
-            return new ImmutableSipResponse(msg, initialLine.toResponseLine(), headers,
-                    indexOfTo,
-                    indexOfFrom,
-                    indexOfCSeq,
-                    indexOfCallId,
-                    indexOfMaxForwards,
-                    indexOfVia,
-                    indexOfRoute,
-                    indexOfRecordRoute,
-                    indexOfContact,
-                    payload);
+            return new ImmutableSipResponse(msg,
+                                            initialLine.toResponseLine(),
+                                            headers,
+                                            toHeader,
+                                            fromHeader,
+                                            cSeqHeader,
+                                            callIdHeader,
+                                            maxForwardsHeader,
+                                            viaHeader,
+                                            routeHeader,
+                                            recordRouteHeader,
+                                            contactHeader,
+                                            payload);
         }
     }
 
@@ -2291,20 +2293,20 @@ public class SipParser {
 
     public static boolean couldBeSipMessage(final byte a, final byte b, final byte c) throws IOException {
         return a == 'S' && b == 'I' && c == 'P' || // response
-                a == 'I' && b == 'N' && c == 'V' || // INVITE
-                a == 'A' && b == 'C' && c == 'K' || // ACK
-                a == 'B' && b == 'Y' && c == 'E' || // BYE
-                a == 'O' && b == 'P' && c == 'T' || // OPTIONS
-                a == 'C' && b == 'A' && c == 'N' || // CANCEL
-                a == 'M' && b == 'E' && c == 'S' || // MESSAGE
-                a == 'R' && b == 'E' && c == 'G' || // REGISTER
-                a == 'I' && b == 'N' && c == 'F' || // INFO
-                a == 'P' && b == 'R' && c == 'A' || // PRACK
-                a == 'S' && b == 'U' && c == 'B' || // SUBSCRIBE
-                a == 'N' && b == 'O' && c == 'T' || // NOTIFY
-                a == 'U' && b == 'P' && c == 'D' || // UPDATE
-                a == 'R' && b == 'E' && c == 'F' || // REFER
-                a == 'P' && b == 'U' && c == 'B'; // PUBLISH
+               a == 'I' && b == 'N' && c == 'V' || // INVITE
+               a == 'A' && b == 'C' && c == 'K' || // ACK
+               a == 'B' && b == 'Y' && c == 'E' || // BYE
+               a == 'O' && b == 'P' && c == 'T' || // OPTIONS
+               a == 'C' && b == 'A' && c == 'N' || // CANCEL
+               a == 'M' && b == 'E' && c == 'S' || // MESSAGE
+               a == 'R' && b == 'E' && c == 'G' || // REGISTER
+               a == 'I' && b == 'N' && c == 'F' || // INFO
+               a == 'P' && b == 'R' && c == 'A' || // PRACK
+               a == 'S' && b == 'U' && c == 'B' || // SUBSCRIBE
+               a == 'N' && b == 'O' && c == 'T' || // NOTIFY
+               a == 'U' && b == 'P' && c == 'D' || // UPDATE
+               a == 'R' && b == 'E' && c == 'F' || // REFER
+               a == 'P' && b == 'U' && c == 'B'; // PUBLISH
 
     }
 

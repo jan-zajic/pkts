@@ -9,6 +9,11 @@ import io.pkts.packet.sip.header.SipHeader;
 import io.pkts.packet.sip.header.ToHeader;
 
 import java.util.List;
+import java.util.Map;
+
+
+
+
 
 /**
  * @author jonas@jonasborjesson.com
@@ -31,6 +36,7 @@ public final class SipResponseBuilder extends SipMessageBuilder<SipResponse> imp
         DEFAULT_RESPONSE_REASON[180] = Buffers.wrap("Ringing");
         DEFAULT_RESPONSE_REASON[181] = Buffers.wrap("Call is Being Forwarded");
         DEFAULT_RESPONSE_REASON[182] = Buffers.wrap("Queued");
+        DEFAULT_RESPONSE_REASON[183] = Buffers.wrap("Session Progress");
         DEFAULT_RESPONSE_REASON[199] = Buffers.wrap("Early Dialog Terminated");
 
         // 2xx—Successful Responses
@@ -109,7 +115,7 @@ public final class SipResponseBuilder extends SipMessageBuilder<SipResponse> imp
         DEFAULT_RESPONSE_REASON[606] = Buffers.wrap("Not Acceptable");
     }
 
-    private int statusCode;
+    private final int statusCode;
 
     private Buffer reason;
 
@@ -147,30 +153,27 @@ public final class SipResponseBuilder extends SipMessageBuilder<SipResponse> imp
     }
 
     @Override
-    protected SipResponse internalBuild(final Buffer msg,
-                                        final SipInitialLine initialLine,
-                                        final List<SipHeader> headers,
-                                        final short indexOfTo,
-                                        final short indexOfFrom,
-                                        final short indexOfCSeq,
-                                        final short indexOfCallId,
-                                        final short indexOfMaxForwards,
-                                        final short indexOfVia,
-                                        final short indexOfRoute,
-                                        final short indexOfRecordRoute,
-                                        final short indexOfContact,
+    protected SipResponse internalBuild(final Buffer msg, final SipInitialLine initialLine,
+                                        final Map<String, List<SipHeader>> headers, final SipHeader toHeader,
+                                        final SipHeader fromHeader, final SipHeader cSeqHeader,
+                                        final SipHeader callIdHeader, final SipHeader maxForwardsHeader,
+                                        final SipHeader viaHeader, final SipHeader routeHeader,
+                                        final SipHeader recordRouteHeader, final SipHeader contactHeader,
                                         final Buffer body) {
-        return new ImmutableSipResponse(msg, initialLine.toResponseLine(), headers,
-                indexOfTo,
-                indexOfFrom,
-                indexOfCSeq,
-                indexOfCallId,
-                indexOfMaxForwards,
-                indexOfVia,
-                indexOfRoute,
-                indexOfRecordRoute,
-                indexOfContact,
-                body);
+
+        return new ImmutableSipResponse(msg,
+                                        initialLine.toResponseLine(),
+                                        headers,
+                                        toHeader,
+                                        fromHeader,
+                                        cSeqHeader,
+                                        callIdHeader,
+                                        maxForwardsHeader,
+                                        viaHeader,
+                                        routeHeader,
+                                        recordRouteHeader,
+                                        contactHeader,
+                                        body);
     }
 
     @Override
@@ -190,7 +193,7 @@ public final class SipResponseBuilder extends SipMessageBuilder<SipResponse> imp
         return this;
     }
 
-    private static Buffer getDefaultResponseReason(int statusCode) {
+    private static Buffer getDefaultResponseReason(final int statusCode) {
         final Buffer reason = DEFAULT_RESPONSE_REASON[statusCode];
         if (reason != null) {
             return reason.slice(); // really need to create immutable buffers

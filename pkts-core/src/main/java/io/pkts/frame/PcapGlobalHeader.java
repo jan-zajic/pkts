@@ -108,8 +108,16 @@ public final class PcapGlobalHeader {
         return new PcapGlobalHeader(ByteOrder.LITTLE_ENDIAN, body.getRawArray(), null);
     }
 
+    public PcapGlobalHeader(final ByteOrder byteOrder, final byte[] body) {
+        this(byteOrder,body,null);
+    }
+
+    public PcapGlobalHeader(final ByteOrder byteOrder, final byte[] body, boolean nsTimestamps) {
+        this(byteOrder,body, nsTimestamps,null);
+    }
+
     public PcapGlobalHeader(final ByteOrder byteOrder, final byte[] body, final PcapngSectionHeader pcapng) {
-        this(byteOrder,body,false, null);
+        this(byteOrder,body,false, pcapng);
     }
 
     public PcapGlobalHeader(final ByteOrder byteOrder, final byte[] body, final boolean nsTimestamps, final PcapngSectionHeader pcapng) {
